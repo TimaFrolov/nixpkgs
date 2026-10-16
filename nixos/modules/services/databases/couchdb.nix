@@ -215,6 +215,67 @@ in
         User = cfg.user;
         Group = cfg.group;
         ExecStart = executable;
+
+        # Hardening
+        RuntimeDirectory = "couchdb";
+
+        ProtectSystem = "strict";
+
+        ReadWritePaths = lib.uniqueStrings [
+          cfg.databaseDir
+          cfg.viewIndexDir
+          cfg.logFile
+          (dirOf cfg.uriFile)
+          (dirOf cfg.configFile)
+        ];
+        ReadOnlyPaths = [
+          builtins.storeDir
+          cfg.argsFile
+          # "/bin" # /bin/sh for erlexec's system() epmd spawn
+        ]
+        ++ cfg.extraConfigFiles;
+
+        RestrictSUIDSGID = true;
+        CapabilityBoundingSet = "";
+
+        RestrictAddressFamilies = [
+          "AF_UNIX"
+          "AF_INET"
+          "AF_INET6"
+        ];
+        # CouchDB clusters use dynamic port 0 binding, which is incompatible with bind address filtering
+        # So no SocketBindAllow or SocketBindDeny
+
+        SystemCallErrorNumber = "EPERM";
+        SystemCallFilter = [
+          "@system-service"
+          # "~@privileged"
+          # "~@resources"
+        ];
+        SystemCallArchitectures = "native";
+
+        UMask = "0027";
+
+        ProtectProc = "invisible";
+        LockPersonality = true;
+        NoNewPrivileges = true;
+        PrivateMounts = true;
+        PrivateDevices = true;
+        PrivateIPC = true;
+        PrivatePIDs = true;
+        PrivateTmp = true;
+        PrivateUsers = true;
+        ProtectClock = true;
+        ProtectHome = true;
+        ProtectKernelLogs = true;
+        ProtectKernelModules = true;
+        ProtectHostname = true;
+        ProtectKernelTunables = true;
+        ProtectControlGroups = "strict";
+        RemoveIPC = true;
+        RestrictRealtime = true;
+        RestrictNamespaces = true;
+        MemoryDenyWriteExecute = false; # Erlang has JIT
       };
     };
 
